@@ -45,7 +45,7 @@ namespace GanbaroDigital\HttpClient\V1\Clients;
 
 use GanbaroDigital\HttpClient\V1\Exceptions\HttpCallFailed;
 use GanbaroDigital\HttpClient\V1\Urls\BuildUrl;
-use GanbaroDigital\JSON\V1\Decoders\DecodeJson;
+use GanbaroDigital\JsonParser\V1\Decoders\DecodeJson;
 
 /**
  * a wrapper around Curl
