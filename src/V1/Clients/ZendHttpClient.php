@@ -45,7 +45,7 @@ namespace GanbaroDigital\HttpClient\V1\Clients;
 
 use GanbaroDigital\HttpClient\V1\Exceptions\HttpCallFailed;
 use GanbaroDigital\HttpClient\V1\Urls\BuildUrl;
-use GanbaroDigital\JSON\V1\Decoders\DecodeJson;
+use GanbaroDigital\JsonParser\V1\Decoders\DecodeJson;
 use Zend\Http\Client;
 use Zend\Http\Request;
 use Zend\Http\Response;
@@ -61,14 +61,6 @@ class ZendHttpClient implements HttpClient
      * @var string
      */
     private $baseUrl;
-
-    /**
-     * keep track of the last API request made, in case we need it to help
-     * us report a useful error
-     *
-     * @var Request
-     */
-    private $lastRequest;
 
     /**
      * our constructor
@@ -255,8 +247,8 @@ class ZendHttpClient implements HttpClient
      *         the request that has already been prepared
      * @param  integer $timeout
      *         how long before we timeout the request?
-     * @return object
-     *         what we get back
+     * @return array
+     *         the request, and the response object
      */
     private function httpCall(Request $request, $timeout = 45)
     {
@@ -275,27 +267,29 @@ class ZendHttpClient implements HttpClient
             $request->getHeaders()->addHeaders(['Accept' => 'application/json']);
         }
 
-        // remember the request
-        $this->lastRequest = $request;
-
         // make the call
-        return $client->send($request);
+        return [$request, $client->send($request) ];
     }
 
     /**
-     * convert the HTTP response (which could be of any type) into an array
-     * of values
+     * extract (and decode) the payload from the HTTP response
      *
+     * clients that implement this method *MAY* throw an exception if the
+     * request failed
+     *
+     * @param  mixed $request
+     *         the request returned from one of the httpXXX calls above
      * @param  mixed $response
-     * @return array
+     *         the response returned from one of the httpXXX calls above
+     * @return mixed
      */
-    public function extractResponsePayload($response)
+    public function extractResponsePayload($request, $response)
     {
         // special case - an error occurred
         if (!$response->isSuccess()) {
             throw HttpCallFailed::newFromVar(
                 $response, 'response', [
-                    'request' => $this->lastRequest->__toString(),
+                    'request' => $request->__toString(),
                     'response' => [
                         'statusCode' => $response->getStatusCode(),
                         'body' => $response->getBody()

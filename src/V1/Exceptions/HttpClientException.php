@@ -46,7 +46,7 @@ namespace GanbaroDigital\HttpClient\V1\Exceptions;
 /**
  * this interface is only used for type-hinting
  */
-interface HttpException
+interface HttpClientException
 {
 
 }
