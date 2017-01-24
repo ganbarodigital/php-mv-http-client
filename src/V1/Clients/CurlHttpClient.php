@@ -280,6 +280,12 @@ class CurlHttpClient implements HttpClient
             }
         }
 
+        // add them to our request tracker, for posterity!
+        $request['headers'] = $headers;
+
+        // make sure we're sending the right verb
+        curl_setopt($this->curlHandle, CURLOPT_CUSTOMREQUEST, $request['method']);
+
         // what are the headers we are going to send?
         $curlHeaders = $this->buildHeaders($headers);
         curl_setopt($this->curlHandle, CURLOPT_HTTPHEADER, $curlHeaders);
