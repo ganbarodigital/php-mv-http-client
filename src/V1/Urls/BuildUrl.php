@@ -68,7 +68,7 @@ class BuildUrl
         }
 
         // create the full URL
-        $url = $this->baseUrl . $path;
+        $url = $baseUrl . $path;
         if (count($queryStringParams) > 0) {
             $url = $url . '?' . http_build_query($queryStringParams);
         }
