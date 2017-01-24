@@ -45,7 +45,7 @@ namespace GanbaroDigital\HttpClient\V1\Clients;
 
 use GanbaroDigital\HttpClient\V1\Exceptions\HttpCallFailed;
 use GanbaroDigital\HttpClient\V1\Urls\BuildUrl;
-use GanbaroDigital\JSON\V1\Decoders\DecodeJson;
+use GanbaroDigital\JsonParser\V1\Decoders\DecodeJson;
 
 /**
  * a wrapper around Curl
@@ -125,13 +125,13 @@ class CurlHttpClient implements HttpClient
         curl_setopt($this->curlHandle, CURLOPT_HTTPGET, true);
 
         // remember what we're up to
-        $this->lastRequest = [
+        $request = [
             'url' => $url,
             'method' => 'GET'
         ];
 
         // make the call
-        return $this->httpCall($headers, $timeout);
+        return $this->httpCall($request, $headers, $timeout);
     }
 
     /**
@@ -166,14 +166,14 @@ class CurlHttpClient implements HttpClient
         curl_setopt($this->curlHandle, CURLOPT_POSTFIELDS, $payload);
 
         // remember what we're sending
-        $this->lastRequest = [
+        $request = [
             'url' => $url,
             'method' => 'POST',
             'payload' => $payload
         ];
 
         // make the call
-        return $this->httpCall($headers, $timeout);
+        return $this->httpCall($request, $headers, $timeout);
     }
 
     /**
@@ -211,14 +211,14 @@ class CurlHttpClient implements HttpClient
         curl_setopt($this->curlHandle, CURLOPT_POSTFIELDS, $payload);
 
         // remember what we're sending
-        $this->lastRequest = [
+        $request = [
             'url' => $url,
             'method' => 'PUT',
             'payload' => $payload
         ];
 
         // make the call
-        return $this->httpCall($headers, $timeout);
+        return $this->httpCall($request, $headers, $timeout);
     }
 
     /**
@@ -245,26 +245,28 @@ class CurlHttpClient implements HttpClient
         curl_setopt($this->curlHandle, CURLOPT_CUSTOMREQUEST, 'DELETE');
 
         // remember what we're sending
-        $this->lastRequest = [
+        $request = [
             'url' => $url,
             'method' => 'DELETE',
         ];
 
         // make the call
-        return $this->httpCall($headers, $timeout);
+        return $this->httpCall($request, $headers, $timeout);
     }
 
     /**
      * make a HTTP call
      *
-     * @param  Request $request
+     * @param  array $request
      *         the request that has already been prepared
+     * @param  array $headers
+     *         the headers to use in the HTTP call
      * @param  integer $timeout
      *         how long before we timeout the request?
      * @return object
      *         what we get back
      */
-    private function httpCall($headers, $timeout = 45)
+    private function httpCall($request, $headers, $timeout = 45)
     {
         // add some useful default headers
         $defaultHeaders = [
@@ -317,24 +319,29 @@ class CurlHttpClient implements HttpClient
         }
 
         // all done
-        return $response;
+        return [$request, $response];
     }
 
     /**
-     * convert the HTTP response (which could be of any type) into an array
-     * of values
+     * extract (and decode) the payload from the HTTP response
      *
+     * clients that implement this method *MAY* throw an exception if the
+     * request failed
+     *
+     * @param  mixed $request
+     *         the request returned from one of the httpXXX calls above
      * @param  mixed $response
-     * @return array
+     *         the response returned from one of the httpXXX calls above
+     * @return mixed
      */
-    public function extractResponsePayload($response)
+    public function extractResponsePayload($request, $response)
     {
         // what can we learn from this curl request?
         if ($response['statusCode'] > 399) {
             // special case - an error occurred
             throw HttpCallFailed::newFromVar(
                 $response, 'response', [
-                    'request' => $this->lastRequest,
+                    'request' => $request,
                     'response' => [
                         'statusCode' => $response['statusCode'],
                         'body' => $response['body']
