@@ -283,7 +283,7 @@ class CurlMultiHttpClient implements HttpClient
         // add some useful default headers
         $defaultHeaders = [
             'Accept' => 'application/json',
-            'User-Agent' => 'GanbaroDigital/HttpClient/V1/CurlHttpClient',
+            'User-Agent' => __CLASS__,
             'Keep-Alive' => '300',
         ];
         foreach ($defaultHeaders as $key => $value) {
@@ -294,6 +294,9 @@ class CurlMultiHttpClient implements HttpClient
 
         // add them to our request tracker, for posterity!
         $request['headers'] = $headers;
+
+        // make sure we're sending the right verb
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request['method']);
 
         // what are the headers we are going to send?
         $curlHeaders = $this->buildHeaders($headers);
