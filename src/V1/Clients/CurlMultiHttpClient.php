@@ -283,7 +283,7 @@ class CurlMultiHttpClient implements HttpClient
         // add some useful default headers
         $defaultHeaders = [
             'Accept' => 'application/json',
-            'User-Agent' => __CLASS__,
+            'User-Agent' => 'GanbaroDigital/HttpClient/V1/CurlHttpClient',
             'Keep-Alive' => '300',
         ];
         foreach ($defaultHeaders as $key => $value) {
@@ -294,9 +294,6 @@ class CurlMultiHttpClient implements HttpClient
 
         // add them to our request tracker, for posterity!
         $request['headers'] = $headers;
-
-        // make sure we're sending the right verb
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request['method']);
 
         // what are the headers we are going to send?
         $curlHeaders = $this->buildHeaders($headers);
@@ -314,7 +311,7 @@ class CurlMultiHttpClient implements HttpClient
         $this->curlHandles[] = $ch;
 
         // nothing more we can do atm
-        return [$request, $ch];
+        return [$request, count($this->curlHandles) - 1];
     }
 
     /**
@@ -357,6 +354,7 @@ class CurlMultiHttpClient implements HttpClient
             // parse the rawResponse *NOW*, whilst the information is still fresh!
             $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             $response = [
+                'request' => $request[$id],
                 'statusCode' => curl_getinfo($ch, CURLINFO_HTTP_CODE),
                 'rawHeader' => substr($rawResponse, $headerSize),
                 'rawResponse' => $rawResponse,
@@ -370,28 +368,13 @@ class CurlMultiHttpClient implements HttpClient
                 $response['headers'][substr($headerLine, 0, $separatorLoc)] = trim(substr($headerLine, $separatorLoc + 1));
             }
 
-            // what can we learn from this curl request?
-            if ($response['statusCode'] > 399) {
-                // special case - an error occurred
-                throw HttpCallFailed::newFromVar(
-                    $response, 'response', [
-                        'request' => $request,
-                        'response' => [
-                            'statusCode' => $response['statusCode'],
-                            'body' => $response['body']
-                        ]
-                    ]
-                );
-            }
-
             // we should have a payload to decode and return
-            if ($response['statusCode'] === 204) {
-                // no content
-                $retval[$id]=[];
+            if ($response['statusCode'] < 300 && $response['statusCode'] !== 204) {
+                $response['json'] = DecodeJson::from($response['body']);
             }
 
             // turn the payload into an array
-            $retval[$id] = DecodeJson::from($response['body']);
+            $retval[$id] = $response;
 
             // we're done with this curl handle
             curl_multi_remove_handle($this->multiHandle, $ch);

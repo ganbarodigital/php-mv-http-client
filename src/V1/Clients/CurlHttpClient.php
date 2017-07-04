@@ -271,7 +271,7 @@ class CurlHttpClient implements HttpClient
         // add some useful default headers
         $defaultHeaders = [
             'Accept' => 'application/json',
-            'User-Agent' => __CLASS__,
+            'User-Agent' => 'GanbaroDigital/HttpClient/V1/CurlHttpClient',
             'Keep-Alive' => '300',
         ];
         foreach ($defaultHeaders as $key => $value) {
